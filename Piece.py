@@ -1,6 +1,6 @@
 
 import math
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from PyQt6.QtCore import QObject, QPointF, QTimer, pyqtSignal
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QGraphicsPixmapItem
@@ -95,6 +95,7 @@ class Piece(QGraphicsPixmapItem):
                 
 
     def _explode_tick(self):
+        all_finished = True
         for fragment, target in self.fragmentItems:
             pos = fragment.pos()
 
@@ -105,17 +106,19 @@ class Piece(QGraphicsPixmapItem):
 
             if dist <= 1:
                 fragment.setPos(target)
-                self.explode_timer.stop()
-
             else:
+                all_finished = False
                 step = min(dist, 2)
                 fragment.setPos(pos.x() + dx / dist * step, pos.y() + dy / dist * step)
 
             if d_opacity <= 0.1:
                 fragment.setOpacity(0)
-
             else:
+                all_finished = False
                 fragment.setOpacity(fragment.opacity() - 0.03)
+
+        if all_finished:
+            self.explode_timer.stop()
 
     def _move_tick(self):
         pos = self.pos()

@@ -243,13 +243,17 @@ class GameManager:
         self.timeout.stop()
         if forced:
             print("Player took too long, terminating thread")
+            self.current_player.terminate()
+            self.current_player.wait()
+        else:
+            self.current_player.wait(1000)
 
-        self.current_player.terminate()
-        self.current_player.quit()
+        self.current_player.deleteLater()
 
         self.apply_move()
 
         if self.check_game_end():
+            self.current_player = None
             return True
 
         self.current_player = None
