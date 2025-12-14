@@ -365,7 +365,7 @@ def evaluate(squares, mycolor):
 
 
 # TODO
-def minmax()
+def minmax():
     pass 
 
 """
