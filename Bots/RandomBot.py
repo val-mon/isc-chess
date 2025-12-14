@@ -271,7 +271,7 @@ def generate_moves(squares, mycolor):
                 case Pieces.bishop | Pieces.rook | Pieces.queen:
                     moves.extend(generate_sliding_moves(squares, start_square, piece))
                 case _:
-                    print("INFO : problem identifing piece")
+                    print("INFO : problem generating moves")
     return moves
 
 
@@ -319,9 +319,54 @@ def index_to_xy(n: int):
     return y, x
 
 
+# TO TEST
+def evaluate(squares, mycolor):
+    PAWN_VALUE = 100
+    KNIGHT_VALUE = 300
+    BISHOP_VALUE = 300
+    ROOK_VALUE = 500
+    QUEEN_VALUE = 900
+    KING_VALUE = 9000
+    
+    def count_material(color):
+        material = 0
+        
+        for square in squares:
+            piece_type, piece_color = square
+            
+            if piece_type == Pieces.none or piece_color != color:
+                continue
+                
+            match piece_type :
+                case Pieces.pawn:
+                    material += PAWN_VALUE
+                case Pieces.knight:
+                    material += KNIGHT_VALUE
+                case Pieces.bishop:
+                    material += BISHOP_VALUE
+                case Pieces.rook:
+                    material += ROOK_VALUE
+                case Pieces.queen:
+                    material += QUEEN_VALUE
+                case Pieces.king:
+                    material += KING_VALUE
+                case _:
+                    print("INFO : problem generating moves")
+                        
+        return material
+    
+    white_eval = count_material(Pieces.white)
+    black_eval = count_material(Pieces.black)
+    
+    evaluation = white_eval - black_eval
+    perspective = 1 if mycolor == Pieces.white else -1
+    
+    return evaluation * perspective
+
+
 # TODO
-def evaluate(squares, move):
-    pass
+def minmax()
+    pass 
 
 """
 player_sequence
