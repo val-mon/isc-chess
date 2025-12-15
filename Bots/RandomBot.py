@@ -304,6 +304,11 @@ def generate_legal_moves(squares, moves, mycolor):
     legal_moves = []
 
     for move_to_verify in moves:
+        target_piece, _ = squares[move_to_verify.target_square]
+        if target_piece == Pieces.king:
+            # C'est gagné, on ajoute le coup et on ne vérifie rien d'autre
+            legal_moves.append(move_to_verify)
+            continue
         new_squares = make_move(squares, move_to_verify)
         new_color = Pieces.white if mycolor == Pieces.black else Pieces.black
         
@@ -328,7 +333,11 @@ def make_move(squares, move):
 
     # get the piece at start square
     piece = new_squares[move.start_square]
-
+    
+    # if piece is pawn and at last square, transform to queen
+    if piece == Pieces.pawn and move.target_square >= 56 and move.target_square <=63:
+        piece = Pieces.queen
+    
     # move piece to target square
     new_squares[move.target_square] = piece
 
@@ -391,18 +400,18 @@ def evaluate(squares, mycolor):
 
 # TODO
 def minmax(squares, color: int, depth: int) -> int:
-    if depth == 0:
+    if depth <= 0:
         return evaluate(squares, color)
     
     moves = generate_moves(squares, color)
+    lm = generate_legal_moves(squares, moves, color)
     
     if len(moves) == 0:
-        return -minmax(squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1)
+        return int(-100000 / depth)
     
     best = float('-inf')
     
-    for m in moves:
-        #print(m.start_square, m.target_square, evaluate(loaded_board, color))
+    for m in moves:        
         new_squares = make_move(squares, m)
         eval = -minmax(new_squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1)
         best = max(eval, best)
@@ -414,14 +423,11 @@ def find_best_move(squares, color: int, depth: int) -> tuple[tuple[int,int], tup
     best_eval = float('-inf')
     
     moves = generate_moves(squares, color)
-    print([(m.start_square, m.target_square) for m in moves])
+    lm = generate_legal_moves(squares, moves, color)
     
-    if len(moves) == 0:
-        return ((0,0),(0,0)) # ne bouge pas si pas de moves dispo
-    
-    print(moves)
     for m in moves:
         new_squares = make_move(squares, m)
+        print("Possible move : ", index_to_xy(m.start_square), index_to_xy(m.target_square))
         
         # premier coup fait par nous, on a besoin du coup, autrement, minmax se charge de gérer avec uniquement des int (evals)
         eval = -minmax(new_squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1)
@@ -429,10 +435,9 @@ def find_best_move(squares, color: int, depth: int) -> tuple[tuple[int,int], tup
         if eval > best_eval:
             best_eval = eval
             best_move = m
-    
-    bm_from = index_to_xy(best_move.start_square)
-    bm_to = index_to_xy(best_move.target_square)
-    return ((bm_from[0], bm_from[1]),(bm_to[0],bm_to[1]))
+            
+        print(f"\tEvaluated as {eval}")
+    return index_to_xy(best_move.start_square), index_to_xy(best_move.target_square)
     
 """
 player_sequence
