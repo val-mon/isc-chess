@@ -369,14 +369,18 @@ def index_to_xy(n: int):
     return y, x
 
 
-def evaluate(squares, mycolor):
-    PAWN_VALUE = 100
-    KNIGHT_VALUE = 300
-    BISHOP_VALUE = 300
-    ROOK_VALUE = 500
-    QUEEN_VALUE = 900
-    KING_VALUE = 9000
+class PiecesValues :
+    get_piece_value = {
+        Pieces.pawn : 100,
+        Pieces.knight : 300,
+        Pieces.bishop : 300,
+        Pieces.rook : 500,
+        Pieces.queen : 900,
+        Pieces.king : 9000,
+    }
 
+
+def evaluate(squares, mycolor):
     def count_material(color):
         material = 0
 
@@ -388,17 +392,17 @@ def evaluate(squares, mycolor):
 
             match piece_type:
                 case Pieces.pawn:
-                    material += PAWN_VALUE
+                    material += PiecesValues.get_piece_value.get(Pieces.pawn)
                 case Pieces.knight:
-                    material += KNIGHT_VALUE
+                    material += PiecesValues.get_piece_value.get(Pieces.knight)
                 case Pieces.bishop:
-                    material += BISHOP_VALUE
+                    material += PiecesValues.get_piece_value.get(Pieces.bishop)
                 case Pieces.rook:
-                    material += ROOK_VALUE
+                    material += PiecesValues.get_piece_value.get(Pieces.rook)
                 case Pieces.queen:
-                    material += QUEEN_VALUE
+                    material += PiecesValues.get_piece_value.get(Pieces.queen)
                 case Pieces.king:
-                    material += KING_VALUE
+                    material += PiecesValues.get_piece_value.get(Pieces.king)
                 case _:
                     print("INFO : problem evaluating moves")
 
@@ -413,6 +417,30 @@ def evaluate(squares, mycolor):
     return evaluation * perspective
 
 
+def order_moves(squares, moves):
+    ordered = []
+
+    for move in moves :
+        move_score_guess = 0
+        piece = squares[move.start_square]
+        move_piece_type, move_piece_color = squares[move.start_square]
+        captured_piece_type, caputre_piece_color = squares[move.target_square]
+
+        if captured_piece_type != Pieces.none :
+            move_score_guess = 10 * PiecesValues.get_piece_value.get(captured_piece_type) - PiecesValues.get_piece_value.get(move_piece_type)
+
+        target_y = index_to_xy(move.target_square)[0]
+        if piece[0] == Pieces.pawn and (target_y == 7 or target_y == 0):
+            move_score_guess += PiecesValues.get_piece_value.get(Pieces.queen)
+            
+        # TODO : add penalize moving our pieces to a square attacked by an opponent pawn
+
+        ordered.append([move, move_score_guess])
+    
+    ordered.sort(key=lambda x: x[1], reverse=True)
+    return [move for move, score in ordered]
+
+        
 nbr_nodes = 0
 
 
@@ -429,8 +457,10 @@ def alpha_beta(squares, color: int, depth: int, pawn_directions, alpha, beta) ->
 
     if depth <= 0:
         return evaluate(squares, color)
-
-    for m in lm:
+    
+    lm_ordered = order_moves(squares, lm)
+    for m in lm_ordered:
+    # for m in lm :
         if squares[m.target_square][0] == Pieces.king:
             return 1000000 + depth
         new_squares = make_move(squares, m)
@@ -483,11 +513,11 @@ def find_best_move(squares, color: int, depth: int, pawn_directions) -> tuple[tu
             return index_to_xy(m.start_square), index_to_xy(m.target_square)
         new_squares = make_move(squares, m)
         # print("Possible move : ", index_to_xy(m.start_square), index_to_xy(m.target_square))
-        
+
         # premier coup fait par nous, on a besoin du coup, autrement, minmax se charge de gérer avec uniquement des int (evals)
         eval = -alpha_beta(new_squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1, pawn_directions, float("-inf"), float("inf"))
         # eval = -minmax(new_squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1, pawn_directions)
-        
+
         if eval > best_eval:
             best_eval = eval
             best_move = m
