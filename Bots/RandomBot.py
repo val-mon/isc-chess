@@ -1,12 +1,11 @@
 import random
 
 from Bots.ChessBotList import register_chess_bot
-import Piece
 
 
 class Pieces:
     none = 0
-    
+
     king = 1
     pawn = 2
     knight = 3
@@ -43,7 +42,7 @@ def print_squares(squares):
     count = 0
     line = ""
     for square in squares:
-        count+=1
+        count += 1
         line += f"{square} "
         if count == 8:
             print()
@@ -63,14 +62,14 @@ def precompute_move_data():
             square_index = rank * 8 + file
 
             num_square_to_edge[square_index] = [
-                num_up,                      # 0: up
-                num_down,                    # 1: down
-                num_left,                    # 2: left
-                num_right,                   # 3: right
-                min(num_up, num_left),       # 4: up_left
-                min(num_down, num_left),     # 5: down_left
-                min(num_up, num_right),      # 6: up_right
-                min(num_down, num_right),    # 7: down_right
+                num_up,  # 0: up
+                num_down,  # 1: down
+                num_left,  # 2: left
+                num_right,  # 3: right
+                min(num_up, num_left),  # 4: up_left
+                min(num_down, num_left),  # 5: down_left
+                min(num_up, num_right),  # 6: up_right
+                min(num_down, num_right),  # 7: down_right
             ]
     return num_square_to_edge
 
@@ -98,19 +97,44 @@ class MoveUtils:
     down_left = -9
     down_right = -7
 
+
 def get_pawn_directions(player_sequence) -> dict[int, int]:
+    """
+    player_sequence
+        0w0 : 
+        - 0 = ID de l'équipe
+        - w = couleur : white
+        - 0 = orientation du plateau
+    
+        1b2
+        - 1 = ID de l'équipe
+        - b = couleur : black
+        - 2 = orientation du plateau
+    
+    orientation
+        '0': White Down (-8), Black Up (+8)
+        '2': White Up (+8), Black Down (-8) (Assumed standard)
+    """
     orientation = player_sequence[2]
-    # '0': White Down (-8), Black Up (+8)
-    # '2': White Up (+8), Black Down (-8) (Assumed standard)
-    if orientation == '0':
+    if orientation == "0":
         return {Pieces.white: MoveUtils.down, Pieces.black: MoveUtils.up}
     else:
         return {Pieces.white: MoveUtils.up, Pieces.black: MoveUtils.down}
 
+
 def generate_pawn_moves(squares, start_square, piece, pawn_directions):
     moves = list()
     piece_type, piece_color = piece
-    max_up, max_down, max_left, max_right, max_up_left, max_down_left, max_up_right, max_down_right = MoveUtils.num_squares_to_edges[start_square]
+    (
+        max_up,
+        max_down,
+        max_left,
+        max_right,
+        max_up_left,
+        max_down_left,
+        max_up_right,
+        max_down_right,
+    ) = MoveUtils.num_squares_to_edges[start_square]
     direction = pawn_directions[piece_color]
 
     if direction == MoveUtils.down:
@@ -152,13 +176,14 @@ def generate_pawn_moves(squares, start_square, piece, pawn_directions):
             target_piece, target_color = squares[target_square]
             if target_piece != Pieces.none and target_color != piece_color:
                 moves.append(Move(start_square, target_square))
-    
+
     return moves
+
 
 def generate_king_moves(squares, start_square, piece):
     moves = list()
     piece_type, piece_color = piece
-    
+
     for i in range(8):
         max_steps = MoveUtils.num_squares_to_edges[start_square][i]
         if max_steps > 0:
@@ -168,10 +193,13 @@ def generate_king_moves(squares, start_square, piece):
                 moves.append(Move(start_square, target))
     return moves
 
+
 def generate_knight_moves(squares, start_square, piece):
     moves = list()
     piece_type, piece_color = piece
-    max_up, max_down, max_left, max_right = MoveUtils.num_squares_to_edges[start_square][:4]
+    max_up, max_down, max_left, max_right = MoveUtils.num_squares_to_edges[
+        start_square
+    ][:4]
 
     # big : up-left (2 left, 1 up)
     if max_left >= 2 and max_up >= 1:
@@ -239,20 +267,22 @@ def generate_sliding_moves(squares, start_square, piece):
     start_dir_index = 0
     end_dir_index = 0
 
-    match piece_type :
-        case Pieces.bishop :
+    match piece_type:
+        case Pieces.bishop:
             start_dir_index = 4
             end_dir_index = 7
-        case Pieces.rook :
+        case Pieces.rook:
             start_dir_index = 0
             end_dir_index = 3
-        case Pieces.queen :
+        case Pieces.queen:
             start_dir_index = 0
             end_dir_index = 7
-    
+
     for direction_index in range(start_dir_index, end_dir_index + 1):
         for n in range(MoveUtils.num_squares_to_edges[start_square][direction_index]):
-            target_square = start_square + MoveUtils.direction_offsets[direction_index] * (n + 1)
+            target_square = start_square + MoveUtils.direction_offsets[
+                direction_index
+            ] * (n + 1)
             piece_on_target, color_on_target = squares[target_square]
 
             # blocked by friendly piece
@@ -266,6 +296,7 @@ def generate_sliding_moves(squares, start_square, piece):
                 break
     return moves
 
+
 def generate_moves(squares, mycolor, pawn_directions):
     moves = list()
     for start_square, piece in enumerate(squares):
@@ -275,7 +306,11 @@ def generate_moves(squares, mycolor, pawn_directions):
                 case Pieces.king:
                     moves.extend(generate_king_moves(squares, start_square, piece))
                 case Pieces.pawn:
-                    moves.extend(generate_pawn_moves(squares, start_square, piece, pawn_directions))
+                    moves.extend(
+                        generate_pawn_moves(
+                            squares, start_square, piece, pawn_directions
+                        )
+                    )
                 case Pieces.knight:
                     moves.extend(generate_knight_moves(squares, start_square, piece))
                 case Pieces.bishop | Pieces.rook | Pieces.queen:
@@ -284,16 +319,17 @@ def generate_moves(squares, mycolor, pawn_directions):
                     print("INFO : problem generating moves")
     return moves
 
+
 def generate_legal_moves(squares, moves, mycolor, pawn_directions):
     legal_moves = []
 
     for move_to_verify in moves:
         new_squares = make_move(squares, move_to_verify)
         new_color = Pieces.white if mycolor == Pieces.black else Pieces.black
-        
+
         check_king = False
         opponent_responses = generate_moves(new_squares, new_color, pawn_directions)
-        
+
         for move in opponent_responses:
             piece_targeted, color_targeted = new_squares[move.target_square]
             if piece_targeted == Pieces.king and color_targeted == mycolor:
@@ -308,16 +344,16 @@ def generate_legal_moves(squares, moves, mycolor, pawn_directions):
 
 def make_move(squares, move):
     # copy the board
-    new_squares = squares[:] 
+    new_squares = squares[:]
 
     # get the piece at start square
     piece = new_squares[move.start_square]
-    
+
     # if piece is pawn and at last square, transform to queen
     target_y = index_to_xy(move.target_square)[0]
     if piece[0] == Pieces.pawn and (target_y == 7 or target_y == 0):
         piece = (Pieces.queen, piece[1])
-    
+
     # move piece to target square
     new_squares[move.target_square] = piece
 
@@ -333,7 +369,6 @@ def index_to_xy(n: int):
     return y, x
 
 
-# TO TEST
 def evaluate(squares, mycolor):
     PAWN_VALUE = 100
     KNIGHT_VALUE = 300
@@ -341,17 +376,17 @@ def evaluate(squares, mycolor):
     ROOK_VALUE = 500
     QUEEN_VALUE = 900
     KING_VALUE = 9000
-    
+
     def count_material(color):
         material = 0
-        
+
         for square in squares:
             piece_type, piece_color = square
-            
+
             if piece_type == Pieces.none or piece_color != color:
                 continue
-                
-            match piece_type :
+
+            match piece_type:
                 case Pieces.pawn:
                     material += PAWN_VALUE
                 case Pieces.knight:
@@ -366,18 +401,51 @@ def evaluate(squares, mycolor):
                     material += KING_VALUE
                 case _:
                     print("INFO : problem evaluating moves")
-                        
+
         return material
-    
+
     white_eval = count_material(Pieces.white)
     black_eval = count_material(Pieces.black)
-    
+
     evaluation = white_eval - black_eval
     perspective = 1 if mycolor == Pieces.white else -1
-    
+
     return evaluation * perspective
 
-def minmax(squares, color: int, depth: int, pawn_directions) -> int:    
+
+nbr_nodes = 0
+
+
+def alpha_beta(squares, color: int, depth: int, pawn_directions, alpha, beta) -> int:
+    global nbr_nodes
+    nbr_nodes +=1
+    
+    moves = generate_moves(squares, color, pawn_directions)
+    lm = generate_legal_moves(squares, moves, color, pawn_directions)
+
+    if not lm:
+        # Checkmate or Stalemate. Prioritize faster checkmates.
+        return -1000000 - depth
+
+    if depth <= 0:
+        return evaluate(squares, color)
+
+    for m in lm:
+        if squares[m.target_square][0] == Pieces.king:
+            return 1000000 + depth
+        new_squares = make_move(squares, m)
+        score = -alpha_beta(new_squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1, pawn_directions, -beta, -alpha)
+        if score >= beta :
+            return beta
+        alpha = max(score, alpha)
+
+    return int(alpha)
+
+
+def minmax(squares, color: int, depth: int, pawn_directions) -> int:
+    global nbr_nodes
+    nbr_nodes +=1
+    
     moves = generate_moves(squares, color, pawn_directions)
     lm = generate_legal_moves(squares, moves, color, pawn_directions)
     
@@ -398,54 +466,50 @@ def minmax(squares, color: int, depth: int, pawn_directions) -> int:
         best = max(score, best)
     
     return int(best) 
- 
-def find_best_move(squares, color: int, depth: int, pawn_directions) -> tuple[tuple[int,int], tuple[int,int]]:
-    best_move = Move(0,0)
-    best_eval = float('-inf')
     
+
+def find_best_move(squares, color: int, depth: int, pawn_directions) -> tuple[tuple[int, int], tuple[int, int]]:
+    best_move = Move(0, 0)
+    best_eval = float("-inf")
+
     moves = generate_moves(squares, color, pawn_directions)
     lm = generate_legal_moves(squares, moves, color, pawn_directions)
-    
+
     if not lm:  # pas de moves légales dispo (échec et mat -> finito)
-        return (0,0),(0,0)
-    
+        return (0, 0), (0, 0)
+
     for m in lm:
         if squares[m.target_square][0] == Pieces.king:
             return index_to_xy(m.start_square), index_to_xy(m.target_square)
         new_squares = make_move(squares, m)
-        print("Possible move : ", index_to_xy(m.start_square), index_to_xy(m.target_square))
+        # print("Possible move : ", index_to_xy(m.start_square), index_to_xy(m.target_square))
         
         # premier coup fait par nous, on a besoin du coup, autrement, minmax se charge de gérer avec uniquement des int (evals)
-        eval = -minmax(new_squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1, pawn_directions)
+        eval = -alpha_beta(new_squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1, pawn_directions, float("-inf"), float("inf"))
+        # eval = -minmax(new_squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1, pawn_directions)
         
         if eval > best_eval:
             best_eval = eval
             best_move = m
-            
-        print(f"\tEvaluated as {eval}")
-    return index_to_xy(best_move.start_square), index_to_xy(best_move.target_square)
-    
-"""
-player_sequence
-    0w0 : 
-    - 0 = ID de l'équipe
-    - w = couleur : white
-    - 0 = orientation du plateau
 
-    1b2
-    - 1 = ID de l'équipe
-    - b = couleur : black
-    - 2 = orientation du plateau
-"""
+        # print(f"\tEvaluated as {eval}")
+    
+    global nbr_nodes
+    print("\nnodes explored :",nbr_nodes)
+    nbr_nodes = 0
+    return index_to_xy(best_move.start_square), index_to_xy(best_move.target_square)
+
+
 def chess_bot(player_sequence, board, time_budget, **kwargs):
     mycolor = Pieces.white if player_sequence[1] == "w" else Pieces.black
     squares = load_from_string(board)
     pawn_directions = get_pawn_directions(player_sequence)
-    
+
     moves = generate_moves(squares, mycolor, pawn_directions)
     legal_moves = generate_legal_moves(squares, moves, mycolor, pawn_directions)
-    
-    random_move = random.choice(legal_moves)    
+
+    random_move = random.choice(legal_moves)
     return index_to_xy(random_move.start_square), index_to_xy(random_move.target_square)
+
 
 register_chess_bot("RandomBot", chess_bot)
