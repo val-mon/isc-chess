@@ -1,6 +1,7 @@
 import random
 
 from Bots.ChessBotList import register_chess_bot
+import Piece
 
 
 class Pieces:
@@ -365,9 +366,50 @@ def evaluate(squares, mycolor):
 
 
 # TODO
-def minmax():
-    pass 
-
+def minmax(squares, color: int, depth: int) -> int:
+    if depth == 0:
+        return evaluate(squares, color)
+    
+    moves = generate_moves(squares, color)
+    
+    if len(moves) == 0:
+        return -minmax(squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1)
+    
+    best = float('-inf')
+    
+    for m in moves:
+        #print(m.start_square, m.target_square, evaluate(loaded_board, color))
+        new_squares = make_move(squares, m)
+        eval = -minmax(new_squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1)
+        best = max(eval, best)
+    
+    return int(best)
+ 
+def find_best_move(squares, color: int, depth: int) -> tuple[tuple[int,int], tuple[int,int]]:
+    best_move = Move(0,0)
+    best_eval = float('-inf')
+    
+    moves = generate_moves(squares, color)
+    print([(m.start_square, m.target_square) for m in moves])
+    
+    if len(moves) == 0:
+        return ((0,0),(0,0)) # ne bouge pas si pas de moves dispo
+    
+    print(moves)
+    for m in moves:
+        new_squares = make_move(squares, m)
+        
+        # premier coup fait par nous, on a besoin du coup, autrement, minmax se charge de gérer avec uniquement des int (evals)
+        eval = -minmax(new_squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1)
+        
+        if eval > best_eval:
+            best_eval = eval
+            best_move = m
+    
+    bm_from = index_to_xy(best_move.start_square)
+    bm_to = index_to_xy(best_move.target_square)
+    return ((bm_from[0], bm_from[1]),(bm_to[0],bm_to[1]))
+    
 """
 player_sequence
     0w0 : 
