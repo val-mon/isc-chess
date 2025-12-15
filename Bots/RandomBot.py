@@ -29,7 +29,7 @@ def load_from_string(board):
     for y in range(8):
         for x in range(8):
             symbol = board[y][x]
-            index = (7 - y) * 8 + x
+            index = (7 - y) * 8 + (7 - x)
             if symbol == "":
                 squares[index] = Pieces.none, Pieces.none
             else:
@@ -39,8 +39,21 @@ def load_from_string(board):
     return squares
 
 
+def print_squares(squares):
+    count = 0
+    line = ""
+    for square in squares:
+        count+=1
+        line += f"{square} "
+        if count == 8:
+            print()
+            print(line)
+            count = 0
+            line = ""
+
+
 def precompute_move_data():
-    num_square_to_edge = [{}] * 64
+    num_square_to_edge = [None] * 64
     for file in range(8):
         for rank in range(8):
             num_up = 7 - rank
@@ -63,7 +76,7 @@ def precompute_move_data():
 
 
 class MoveUtils:
-    direction_offsets = [8, -8, -1, 1, 7, -7, 9, -9]
+    direction_offsets = [8, -8, -1, 1, 7, -9, 9, -7]
 
     num_squares_to_edges = precompute_move_data()
 
@@ -93,82 +106,81 @@ def generate_one_moves(squares, start_square, piece):
 
     is_pawn = (piece_type == Pieces.pawn)
 
-    # up
-    if max_up > 0:
-        target_square = start_square + MoveUtils.up
-        target_piece, target_color = squares[target_square]
-        # pawn: only if empty
-        if is_pawn:
-            if target_color == Pieces.none:
-                moves.append(Move(start_square, target_square))
-        # king: if not same color
-        else:
-            if target_color != piece_color:
-                moves.append(Move(start_square, target_square))
-
-    # up-left
-    if max_up_left > 0:
-        target_square = start_square + MoveUtils.up_left
-        target_piece, target_color = squares[target_square]
-        # pawn: only if enemy piece
-        if is_pawn:
-            if target_color != Pieces.none and target_color != piece_color:
-                moves.append(Move(start_square, target_square))
-        # king: if not same color
-        else:
-            if target_color != piece_color:
-                moves.append(Move(start_square, target_square))
-
-    # up-right
-    if max_up_right > 0:
-        target_square = start_square + MoveUtils.up_right
-        target_piece, target_color = squares[target_square]
-        # pawn: only if enemy piece
-        if is_pawn:
-            if target_color != Pieces.none and target_color != piece_color:
-                moves.append(Move(start_square, target_square))
-        # king: if not same color
-        else:
-            if target_color != piece_color:
-                moves.append(Move(start_square, target_square))
-
-    # king only
     if not is_pawn:
-        # down
-        if max_down > 0:
-            target_square = start_square + MoveUtils.down
+        # up
+        if max_up > 0:
+            target_square = start_square + MoveUtils.up
             target_piece, target_color = squares[target_square]
             if target_color != piece_color:
                 moves.append(Move(start_square, target_square))
-
+    
+        # up-left
+        if max_up_left > 0:
+            target_square = start_square + MoveUtils.up_left
+            target_piece, target_color = squares[target_square]
+            if target_color != piece_color:
+                    moves.append(Move(start_square, target_square))
+    
+        # up-right
+        if max_up_right > 0:
+            target_square = start_square + MoveUtils.up_right
+            target_piece, target_color = squares[target_square]
+            if target_color != piece_color:
+                    moves.append(Move(start_square, target_square))
+        
         # left
         if max_left > 0:
             target_square = start_square + MoveUtils.left
             target_piece, target_color = squares[target_square]
             if target_color != piece_color:
                 moves.append(Move(start_square, target_square))
-
+    
         # right
         if max_right > 0:
             target_square = start_square + MoveUtils.right
             target_piece, target_color = squares[target_square]
             if target_color != piece_color:
                 moves.append(Move(start_square, target_square))
-
-        # down-left
-        if max_down_left > 0:
-            target_square = start_square + MoveUtils.down_left
-            target_piece, target_color = squares[target_square]
+                
+    # down
+    if max_down > 0:
+        target_square = start_square + MoveUtils.down
+        target_piece, target_color = squares[target_square]
+        # pawn : forward only if empty
+        if is_pawn:
+            if target_piece == Pieces.none:
+                moves.append(Move(start_square, target_square))
+        # king: if not same color
+        else:
             if target_color != piece_color:
                 moves.append(Move(start_square, target_square))
 
-        # down-right
-        if max_down_right > 0:
-            target_square = start_square + MoveUtils.down_right
-            target_piece, target_color = squares[target_square]
+    # down-left
+    if max_down_left > 0:
+        target_square = start_square + MoveUtils.down_left
+        target_piece, target_color = squares[target_square]
+        # pawn : only if opponent piece
+        if is_pawn:
+            if target_piece != Pieces.none and target_color != piece_color:
+                moves.append(Move(start_square, target_square))
+        # king: if not same color
+        else:
             if target_color != piece_color:
                 moves.append(Move(start_square, target_square))
 
+    # down-right
+    if max_down_right > 0:
+        target_square = start_square + MoveUtils.down_right
+        target_piece, target_color = squares[target_square]
+        # pawn : only if opponent piece
+        if is_pawn:
+            if target_piece != Pieces.none and target_color != piece_color:
+                moves.append(Move(start_square, target_square))
+        # king: if not same color
+        else:
+            if target_color != piece_color:
+                moves.append(Move(start_square, target_square))
+    
     return moves
 
 
@@ -240,9 +252,21 @@ def generate_sliding_moves(squares, start_square, piece):
     moves = list()
     piece_type, piece_color = piece
 
-    start_dir_index = 4 if piece_type == Pieces.bishop else 0
-    end_dir_index = 4 if piece_type == Pieces.rook else 8
-    for direction_index in range(start_dir_index, end_dir_index):
+    start_dir_index = 0
+    end_dir_index = 0
+
+    match piece_type :
+        case Pieces.bishop :
+            start_dir_index = 4
+            end_dir_index = 7
+        case Pieces.rook :
+            start_dir_index = 0
+            end_dir_index = 3
+        case Pieces.queen :
+            start_dir_index = 0
+            end_dir_index = 7
+    
+    for direction_index in range(start_dir_index, end_dir_index + 1):
         for n in range(MoveUtils.num_squares_to_edges[start_square][direction_index]):
             target_square = start_square + MoveUtils.direction_offsets[direction_index] * (n + 1)
             piece_on_target, color_on_target = squares[target_square]
@@ -316,7 +340,7 @@ def make_move(squares, move):
 
 def index_to_xy(n: int):
     y = 7 - (n // 8)
-    x = n % 8
+    x = 7 - (n % 8)
     return y, x
 
 
@@ -352,7 +376,7 @@ def evaluate(squares, mycolor):
                 case Pieces.king:
                     material += KING_VALUE
                 case _:
-                    print("INFO : problem generating moves")
+                    print("INFO : problem evaluating moves")
                         
         return material
     
@@ -429,7 +453,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     moves = generate_moves(squares, mycolor)
     legal_moves = generate_legal_moves(squares, moves, mycolor)
     
-    random_move = random.choice(legal_moves)
+    random_move = random.choice(legal_moves)    
     return index_to_xy(random_move.start_square), index_to_xy(random_move.target_square)
 
 register_chess_bot("RandomBot", chess_bot)
