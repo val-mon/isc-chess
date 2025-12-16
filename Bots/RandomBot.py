@@ -460,7 +460,6 @@ def alpha_beta(squares, color: int, depth: int, pawn_directions, alpha, beta) ->
     
     lm_ordered = order_moves(squares, lm)
     for m in lm_ordered:
-    # for m in lm :
         if squares[m.target_square][0] == Pieces.king:
             return 1000000 + depth
         new_squares = make_move(squares, m)
@@ -470,33 +469,6 @@ def alpha_beta(squares, color: int, depth: int, pawn_directions, alpha, beta) ->
         alpha = max(score, alpha)
 
     return int(alpha)
-
-
-def minmax(squares, color: int, depth: int, pawn_directions) -> int:
-    global nbr_nodes
-    nbr_nodes +=1
-    
-    moves = generate_moves(squares, color, pawn_directions)
-    lm = generate_legal_moves(squares, moves, color, pawn_directions)
-    
-    if not lm:
-        # Checkmate or Stalemate. Prioritize faster checkmates.
-        return -1000000 - depth
-    
-    if depth <= 0:
-        return evaluate(squares, color)
-    
-    best = float('-inf')
-    
-    for m in lm:
-        if squares[m.target_square][0] == Pieces.king:
-            return 1000000 + depth
-        new_squares = make_move(squares, m)
-        score = -minmax(new_squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1, pawn_directions)
-        best = max(score, best)
-    
-    return int(best) 
-    
 
 def find_best_move(squares, color: int, depth: int, pawn_directions) -> tuple[tuple[int, int], tuple[int, int]]:
     best_move = Move(0, 0)
