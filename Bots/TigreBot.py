@@ -8,7 +8,7 @@ evaluate_time = []
 generate_moves_time = []
 order_moves_time = []
 
-# Base Functions
+# FUNCTIONS
 def load_from_string(board):
     squares = [tuple()] * 64
     for y in range(8):
@@ -121,7 +121,7 @@ def order_moves(squares, moves):
     order_moves_time.append(time() - st)
     return p
 
-# Classes
+# CLASSES
 class Pieces:
     none = 0
 
@@ -459,6 +459,5 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     # print("nombre nodes: ", nbr_nodes)
     
     return fbm
-
 
 register_chess_bot("TigreBot", chess_bot)
