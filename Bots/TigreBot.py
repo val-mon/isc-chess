@@ -1,6 +1,11 @@
 from Bots.ChessBotList import register_chess_bot
 
+from time import time
+
 nbr_nodes = 0
+make_move_time = []
+evaluate_time = []
+generate_moves_time = []
 
 # Base Functions
 def load_from_string(board):
@@ -68,6 +73,7 @@ def index_to_xy(n: int):
     return y, x
 
 def make_move(squares, move):
+    st = time()
     # copy the board
     new_squares = squares[:]
 
@@ -85,6 +91,7 @@ def make_move(squares, move):
     # clear the start square
     new_squares[move.start_square] = (Pieces.none, Pieces.none)
 
+    make_move_time.append(time() - st)
     return new_squares
     
 def order_moves(squares, moves):
@@ -340,6 +347,7 @@ class MoveGeneration:
         
     @staticmethod
     def generate_moves(squares, mycolor, pawn_directions):
+        st = time()
         moves = list()
         for start_square, piece in enumerate(squares):
             piece_type, piece_color = piece
@@ -355,47 +363,25 @@ class MoveGeneration:
                         moves.extend(MoveGeneration.generate_sliding_moves(squares, start_square, piece))
                     case _:
                         print("INFO : problem generating moves")
+        generate_moves_time.append(time() - st)
         return moves
-    
-    @staticmethod
-    def generate_legal_moves(squares, moves, mycolor, pawn_directions):
-        legal_moves = []
-    
-        for move_to_verify in moves:
-            new_squares = make_move(squares, move_to_verify)
-            new_color = Pieces.white if mycolor == Pieces.black else Pieces.black
-    
-            check_king = False
-            opponent_responses = MoveGeneration.generate_moves(new_squares, new_color, pawn_directions)
-    
-            for move in opponent_responses:
-                piece_targeted, color_targeted = new_squares[move.target_square]
-                if piece_targeted == Pieces.king and color_targeted == mycolor:
-                    check_king = True
-                    break
-    
-            if not check_king:
-                legal_moves.append(move_to_verify)
-    
-        return legal_moves
 
 def chess_bot(player_sequence, board, time_budget, **kwargs):
+    start_time = time()
     def alpha_beta(squares, color: int, depth: int, pawn_directions, alpha, beta) -> int:
         global nbr_nodes
-        nbr_nodes +=1
-        
+        nbr_nodes += 1
         moves = MoveGeneration.generate_moves(squares, color, pawn_directions)
-        lm = MoveGeneration.generate_legal_moves(squares, moves, color, pawn_directions)
     
-        if not lm:
+        if not moves:
             # Checkmate or Stalemate. Prioritize faster checkmates.
             return -1000000 - depth
     
         if depth <= 0:
             return evaluate(squares, color)
         
-        lm_ordered = order_moves(squares, lm)
-        for m in lm_ordered:
+        moves = order_moves(squares, moves)
+        for m in moves:
             if squares[m.target_square][0] == Pieces.king:
                 return 1000000 + depth
             new_squares = make_move(squares, m)
@@ -411,12 +397,11 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
         best_eval = float("-inf")
     
         moves = MoveGeneration.generate_moves(squares, color, pawn_directions)
-        lm = MoveGeneration.generate_legal_moves(squares, moves, color, pawn_directions)
     
-        if not lm:  # pas de moves légales dispo (échec et mat -> finito)
+        if not moves:  # pas de moves légales dispo (échec et mat -> finito)
             return (0, 0), (0, 0)
     
-        for m in lm:
+        for m in moves:
             if squares[m.target_square][0] == Pieces.king:
                 return index_to_xy(m.start_square), index_to_xy(m.target_square)
             new_squares = make_move(squares, m)
@@ -432,52 +417,45 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     
             # print(f"\tEvaluated as {eval}")
         
-        global nbr_nodes
-        print("\nnodes explored :",nbr_nodes)
-        nbr_nodes = 0
         return index_to_xy(best_move.start_square), index_to_xy(best_move.target_square)
 
     def evaluate(squares, mycolor):
-        def count_material(color):
-            material = 0
-    
-            for square in squares:
-                piece_type, piece_color = square
-    
-                if piece_type == Pieces.none or piece_color != color:
-                    continue
-    
-                match piece_type:
-                    case Pieces.pawn:
-                        material += PiecesValues.get_piece_value.get(Pieces.pawn)
-                    case Pieces.knight:
-                        material += PiecesValues.get_piece_value.get(Pieces.knight)
-                    case Pieces.bishop:
-                        material += PiecesValues.get_piece_value.get(Pieces.bishop)
-                    case Pieces.rook:
-                        material += PiecesValues.get_piece_value.get(Pieces.rook)
-                    case Pieces.queen:
-                        material += PiecesValues.get_piece_value.get(Pieces.queen)
-                    case Pieces.king:
-                        material += PiecesValues.get_piece_value.get(Pieces.king)
-                    case _:
-                        print("INFO : problem evaluating moves")
-    
-            return material
-    
-        white_eval = count_material(Pieces.white)
-        black_eval = count_material(Pieces.black)
-    
-        evaluation = white_eval - black_eval
-        perspective = 1 if mycolor == Pieces.white else -1
-    
-        return evaluation * perspective
+        st = time()
+        material = 0
 
+        for square in squares:
+            piece_type, piece_color = square
+
+            if piece_type == Pieces.none:
+                continue
+            
+            if piece_color == mycolor:
+                material += PiecesValues.get_piece_value[piece_type]
+            else:
+                material -= PiecesValues.get_piece_value[piece_type]
+    
+        evaluate_time.append(time() - st)
+        return material
+
+    global make_move_time, evaluate_time, generate_moves_time, nbr_nodes
+    make_move_time = []
+    evaluate_time = []
+    generate_moves_time = []
     
     loaded_board = load_from_string(board)
     pawn_directions = get_pawn_directions(player_sequence)
     mycolor = Pieces.white if player_sequence[1] == "w" else Pieces.black
-    return find_best_move(loaded_board, mycolor, 3, pawn_directions)
+    fbm = find_best_move(loaded_board, mycolor, 5, pawn_directions)
+    
+    # Print du temps
+    # print("TigreBot Time Stats")
+    # print("total :", time() - start_time)
+    # print("make_move total: ", sum(make_move_time))
+    # print("evaluate total: ", sum(evaluate_time))
+    # print("generate_moves total: ", sum(generate_moves_time))
+    # print("nombre nodes: ", nbr_nodes)
+    
+    return fbm
 
 
 register_chess_bot("TigreBot", chess_bot)
