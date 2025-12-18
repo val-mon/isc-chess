@@ -6,6 +6,7 @@ nbr_nodes = 0
 make_move_time = []
 evaluate_time = []
 generate_moves_time = []
+order_moves_time = []
 
 # Base Functions
 def load_from_string(board):
@@ -95,6 +96,7 @@ def make_move(squares, move):
     return new_squares
     
 def order_moves(squares, moves):
+    st = time()
     ordered = []
 
     for move in moves :
@@ -115,7 +117,9 @@ def order_moves(squares, moves):
         ordered.append([move, move_score_guess])
     
     ordered.sort(key=lambda x: x[1], reverse=True)
-    return [move for move, score in ordered]
+    p = [move for move, score in ordered]
+    order_moves_time.append(time() - st)
+    return p
 
 # Classes
 class Pieces:
@@ -190,8 +194,7 @@ class MoveGeneration:
             # Down (Move)
             if max_down > 0:
                 target_square = start_square + MoveUtils.down
-                target_piece, target_color = squares[target_square]
-                if target_piece == Pieces.none:
+                if squares[target_square][0] == Pieces.none:
                     moves.append(Move(start_square, target_square))
             # Down-Left (Capture)
             if max_down_left > 0:
@@ -210,8 +213,7 @@ class MoveGeneration:
             # Up (Move)
             if max_up > 0:
                 target_square = start_square + MoveUtils.up
-                target_piece, target_color = squares[target_square]
-                if target_piece == Pieces.none:
+                if squares[target_square][0] == Pieces.none:
                     moves.append(Move(start_square, target_square))
             # Up-Left (Capture)
             if max_up_left > 0:
@@ -231,21 +233,20 @@ class MoveGeneration:
     @staticmethod
     def generate_king_moves(squares, start_square, piece):
         moves = list()
-        piece_type, piece_color = piece
+        piece_color = piece[1]
     
         for i in range(8):
             max_steps = MoveUtils.num_squares_to_edges[start_square][i]
             if max_steps > 0:
                 target = start_square + MoveUtils.direction_offsets[i]
-                target_piece, target_color = squares[target]
-                if target_color != piece_color:
+                if squares[target][1] != piece_color:
                     moves.append(Move(start_square, target))
         return moves
     
     @staticmethod
     def generate_knight_moves(squares, start_square, piece):
         moves = list()
-        piece_type, piece_color = piece
+        piece_color = piece[1]
         max_up, max_down, max_left, max_right = MoveUtils.num_squares_to_edges[
             start_square
         ][:4]
@@ -253,57 +254,49 @@ class MoveGeneration:
         # big : up-left (2 left, 1 up)
         if max_left >= 2 and max_up >= 1:
             target_square = start_square - 2 + MoveUtils.up
-            target_piece, target_color = squares[target_square]
-            if target_color != piece_color:
+            if squares[target_square][1] != piece_color:
                 moves.append(Move(start_square, target_square))
     
         # big : up-right (2 right, 1 up)
         if max_right >= 2 and max_up >= 1:
             target_square = start_square + 2 + MoveUtils.up
-            target_piece, target_color = squares[target_square]
-            if target_color != piece_color:
+            if squares[target_square][1] != piece_color:
                 moves.append(Move(start_square, target_square))
     
         # big : down-left (2 left, 1 down)
         if max_left >= 2 and max_down >= 1:
             target_square = start_square - 2 + MoveUtils.down
-            target_piece, target_color = squares[target_square]
-            if target_color != piece_color:
+            if squares[target_square][1] != piece_color:
                 moves.append(Move(start_square, target_square))
     
         # big : down-right (2 right, 1 down)
         if max_right >= 2 and max_down >= 1:
             target_square = start_square + 2 + MoveUtils.down
-            target_piece, target_color = squares[target_square]
-            if target_color != piece_color:
+            if squares[target_square][1] != piece_color:
                 moves.append(Move(start_square, target_square))
     
         # small : up-left (1 left, 2 up)
         if max_left >= 1 and max_up >= 2:
             target_square = start_square - 1 + 2 * MoveUtils.up
-            target_piece, target_color = squares[target_square]
-            if target_color != piece_color:
+            if squares[target_square][1] != piece_color:
                 moves.append(Move(start_square, target_square))
     
         # small : up-right (1 right, 2 up)
         if max_right >= 1 and max_up >= 2:
             target_square = start_square + 1 + 2 * MoveUtils.up
-            target_piece, target_color = squares[target_square]
-            if target_color != piece_color:
+            if squares[target_square][1] != piece_color:
                 moves.append(Move(start_square, target_square))
     
         # small : down-left (1 left, 2 down)
         if max_left >= 1 and max_down >= 2:
             target_square = start_square - 1 + 2 * MoveUtils.down
-            target_piece, target_color = squares[target_square]
-            if target_color != piece_color:
+            if squares[target_square][1] != piece_color:
                 moves.append(Move(start_square, target_square))
     
         # small : down-right (1 right, 2 down)
         if max_right >= 1 and max_down >= 2:
             target_square = start_square + 1 + 2 * MoveUtils.down
-            target_piece, target_color = squares[target_square]
-            if target_color != piece_color:
+            if squares[target_square][1] != piece_color:
                 moves.append(Move(start_square, target_square))
     
         return moves
@@ -332,7 +325,7 @@ class MoveGeneration:
                 target_square = start_square + MoveUtils.direction_offsets[
                     direction_index
                 ] * (n + 1)
-                piece_on_target, color_on_target = squares[target_square]
+                color_on_target = squares[target_square][1]
     
                 # blocked by friendly piece
                 if color_on_target == piece_color:
@@ -368,7 +361,12 @@ class MoveGeneration:
 
 def chess_bot(player_sequence, board, time_budget, **kwargs):
     start_time = time()
+    alpha_beta_memoization = {}
+    
     def alpha_beta(squares, color: int, depth: int, pawn_directions, alpha, beta) -> int:
+        sq_key = tuple(squares)
+        if (sq_key, color) in alpha_beta_memoization:
+            return alpha_beta_memoization[(sq_key, color)]
         global nbr_nodes
         nbr_nodes += 1
         moves = MoveGeneration.generate_moves(squares, color, pawn_directions)
@@ -390,6 +388,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
                 return beta
             alpha = max(score, alpha)
     
+        alpha_beta_memoization[(sq_key, color)] = int(alpha)
         return int(alpha)
     
     def find_best_move(squares, color: int, depth: int, pawn_directions) -> tuple[tuple[int, int], tuple[int, int]]:
@@ -437,25 +436,29 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
         evaluate_time.append(time() - st)
         return material
 
-    global make_move_time, evaluate_time, generate_moves_time, nbr_nodes
+    global make_move_time, evaluate_time, generate_moves_time, order_moves_time, nbr_nodes
     make_move_time = []
     evaluate_time = []
     generate_moves_time = []
+    order_moves_time = []
     
     loaded_board = load_from_string(board)
     pawn_directions = get_pawn_directions(player_sequence)
     mycolor = Pieces.white if player_sequence[1] == "w" else Pieces.black
-    fbm = find_best_move(loaded_board, mycolor, 5, pawn_directions)
+    fbm = find_best_move(loaded_board, mycolor, 3, pawn_directions)
     
-    # Print du temps
-    # print("TigreBot Time Stats")
-    # print("total :", time() - start_time)
-    # print("make_move total: ", sum(make_move_time))
-    # print("evaluate total: ", sum(evaluate_time))
-    # print("generate_moves total: ", sum(generate_moves_time))
+    # print("TigreBotGenMemo Time Stats")
+    # temps_total = time() - start_time
+    # def getPourcentage(t):
+    #     return str(round(sum(t)/temps_total * 100)) + "%"
+    # print("total :", temps_total)
+    # print("make_move total: ", sum(make_move_time), "->", getPourcentage(make_move_time))
+    # print("evaluate total: ", sum(evaluate_time), "->", getPourcentage(evaluate_time))
+    # print("generate_moves total: ", sum(generate_moves_time), "->", getPourcentage(generate_moves_time))
+    # print("order_moves total: ", sum(order_moves_time), "->", getPourcentage(order_moves_time))
     # print("nombre nodes: ", nbr_nodes)
     
     return fbm
 
 
-register_chess_bot("TigreBot", chess_bot)
+register_chess_bot("TigreBotGenMemo", chess_bot)
