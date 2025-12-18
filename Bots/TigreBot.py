@@ -95,7 +95,7 @@ def make_move(squares, move):
     make_move_time.append(time() - st)
     return new_squares
     
-def order_moves(squares, moves):
+def order_moves(squares, moves, pawn_directions):
     st = time()
     ordered = []
 
@@ -111,8 +111,21 @@ def order_moves(squares, moves):
         target_y = index_to_xy(move.target_square)[0]
         if piece[0] == Pieces.pawn and (target_y == 7 or target_y == 0):
             move_score_guess += PiecesValues.get_piece_value.get(Pieces.queen)
-            
-        # TODO : add penalize moving our pieces to a square attacked by an opponent pawn
+        
+        # TODO : check if worse with memoization of the moves generation
+        
+        # new_squares = make_move(squares, move)
+        # new_color = Pieces.white if move_piece_color == Pieces.black else Pieces.black
+        # opponent_responses = MoveGeneration.generate_moves(squares, new_color, pawn_directions)
+        # check_pawn_attack = False
+        # for new_move in opponent_responses:
+        #     new_move_piece_type, new_move_piece_color = new_squares[new_move.start_square]
+        #     if new_move_piece_type == Pieces.pawn and new_move.target_square == move.target_square :
+        #         check_pawn_attack = True
+        #         break
+        
+        # if check_pawn_attack:
+        #     move_score_guess -= PiecesValues.get_piece_value.get(move_piece_type)
 
         ordered.append([move, move_score_guess])
     
@@ -378,7 +391,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
         if depth <= 0:
             return evaluate(squares, color)
         
-        moves = order_moves(squares, moves)
+        moves = order_moves(squares, moves, pawn_directions)
         for m in moves:
             if squares[m.target_square][0] == Pieces.king:
                 return 1000000 + depth
