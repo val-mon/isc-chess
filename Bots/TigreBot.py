@@ -445,9 +445,9 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     loaded_board = load_from_string(board)
     pawn_directions = get_pawn_directions(player_sequence)
     mycolor = Pieces.white if player_sequence[1] == "w" else Pieces.black
-    fbm = find_best_move(loaded_board, mycolor, 3, pawn_directions)
+    fbm = find_best_move(loaded_board, mycolor, 5, pawn_directions)
     
-    # print("TigreBotGenMemo Time Stats")
+    # print("TigreBot Time Stats")
     # temps_total = time() - start_time
     # def getPourcentage(t):
     #     return str(round(sum(t)/temps_total * 100)) + "%"
@@ -461,4 +461,4 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     return fbm
 
 
-register_chess_bot("TigreBotGenMemo", chess_bot)
+register_chess_bot("TigreBot", chess_bot)
