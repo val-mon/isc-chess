@@ -95,7 +95,7 @@ def make_move(squares, move):
     make_move_time.append(time() - st)
     return new_squares
     
-def order_moves(squares, moves, pawn_directions):
+def order_moves(squares, moves):
     st = time()
     ordered = []
 
@@ -111,21 +111,8 @@ def order_moves(squares, moves, pawn_directions):
         target_y = index_to_xy(move.target_square)[0]
         if piece[0] == Pieces.pawn and (target_y == 7 or target_y == 0):
             move_score_guess += PiecesValues.get_piece_value.get(Pieces.queen)
-        
-        # TODO : check if worse with memoization of the moves generation
-        
-        # new_squares = make_move(squares, move)
-        # new_color = Pieces.white if move_piece_color == Pieces.black else Pieces.black
-        # opponent_responses = MoveGeneration.generate_moves(squares, new_color, pawn_directions)
-        # check_pawn_attack = False
-        # for new_move in opponent_responses:
-        #     new_move_piece_type, new_move_piece_color = new_squares[new_move.start_square]
-        #     if new_move_piece_type == Pieces.pawn and new_move.target_square == move.target_square :
-        #         check_pawn_attack = True
-        #         break
-        
-        # if check_pawn_attack:
-        #     move_score_guess -= PiecesValues.get_piece_value.get(move_piece_type)
+            
+        # TODO : add penalize moving our pieces to a square attacked by an opponent pawn
 
         ordered.append([move, move_score_guess])
     
@@ -351,8 +338,69 @@ class MoveGeneration:
                     break
         return moves
         
-    @staticmethod
+def chess_bot(player_sequence, board, time_budget, **kwargs):
+    start_time = time()
+    generate_moves_memo = {}
+    alpha_beta_memoization = {}
+    
+    def alpha_beta(squares, color: int, depth: int, pawn_directions, alpha, beta) -> int:
+        if time() - start_time >= time_budget - 0.25:   # TODO: trouver pourquoi des fois il prend bien plus de temps que ce qu'on lui laisse
+            raise Exception("no more time")
+        
+        sq_key = tuple(squares)
+        if (sq_key, color) in alpha_beta_memoization:
+            return alpha_beta_memoization[(sq_key, color)]
+        
+        global nbr_nodes
+        nbr_nodes += 1
+        moves = generate_moves(squares, color, pawn_directions)
+    
+        if not moves:
+            # Checkmate or Stalemate. Prioritize faster checkmates.
+            return -100000 - depth
+    
+        if depth <= 0:
+            return evaluate(squares, color)
+        
+        moves = order_moves(squares, moves)
+        for m in moves:
+            if squares[m.target_square][0] == Pieces.king:
+                return 1000000 + depth
+            new_squares = make_move(squares, m)
+            score = -alpha_beta(new_squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1, pawn_directions, -beta, -alpha)
+            if score >= beta :
+                return beta
+            alpha = max(score, alpha)
+
+        alpha_beta_memoization[(sq_key, color)] = int(alpha)
+        return int(alpha)
+    
+    def find_best_move(squares, color: int, depth: int, pawn_directions) -> tuple[tuple[tuple[int, int], tuple[int, int]], int]:
+        best_move = Move(0, 0)
+        best_eval = float("-inf")
+    
+        moves = generate_moves(squares, color, pawn_directions)
+    
+        for m in moves:
+            if squares[m.target_square][0] == Pieces.king:
+                return (index_to_xy(m.start_square), index_to_xy(m.target_square)), 100000 + depth
+            new_squares = make_move(squares, m)
+    
+            eval = -alpha_beta(new_squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1, pawn_directions, float("-inf"), float("inf"))
+    
+            if eval > best_eval:
+                best_eval = eval
+                best_move = m
+        
+        return (index_to_xy(best_move.start_square), index_to_xy(best_move.target_square)), best_eval
+
     def generate_moves(squares, mycolor, pawn_directions):
+        square_data = tuple(squares)
+        dict_key = square_data, mycolor
+
+        if dict_key in generate_moves_memo:
+            return generate_moves_memo[dict_key]
+
         st = time()
         moves = list()
         for start_square, piece in enumerate(squares):
@@ -369,67 +417,10 @@ class MoveGeneration:
                         moves.extend(MoveGeneration.generate_sliding_moves(squares, start_square, piece))
                     case _:
                         print("INFO : problem generating moves")
+        
+        generate_moves_memo[dict_key] = moves
         generate_moves_time.append(time() - st)
         return moves
-
-def chess_bot(player_sequence, board, time_budget, **kwargs):
-    start_time = time()
-    alpha_beta_memoization = {}
-    
-    def alpha_beta(squares, color: int, depth: int, pawn_directions, alpha, beta) -> int:
-        sq_key = tuple(squares)
-        if (sq_key, color) in alpha_beta_memoization:
-            return alpha_beta_memoization[(sq_key, color)]
-        global nbr_nodes
-        nbr_nodes += 1
-        moves = MoveGeneration.generate_moves(squares, color, pawn_directions)
-    
-        if not moves:
-            # Checkmate or Stalemate. Prioritize faster checkmates.
-            return -1000000 - depth
-    
-        if depth <= 0:
-            return evaluate(squares, color)
-        
-        moves = order_moves(squares, moves, pawn_directions)
-        for m in moves:
-            if squares[m.target_square][0] == Pieces.king:
-                return 1000000 + depth
-            new_squares = make_move(squares, m)
-            score = -alpha_beta(new_squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1, pawn_directions, -beta, -alpha)
-            if score >= beta :
-                return beta
-            alpha = max(score, alpha)
-    
-        alpha_beta_memoization[(sq_key, color)] = int(alpha)
-        return int(alpha)
-    
-    def find_best_move(squares, color: int, depth: int, pawn_directions) -> tuple[tuple[int, int], tuple[int, int]]:
-        best_move = Move(0, 0)
-        best_eval = float("-inf")
-    
-        moves = MoveGeneration.generate_moves(squares, color, pawn_directions)
-    
-        if not moves:  # pas de moves légales dispo (échec et mat -> finito)
-            return (0, 0), (0, 0)
-    
-        for m in moves:
-            if squares[m.target_square][0] == Pieces.king:
-                return index_to_xy(m.start_square), index_to_xy(m.target_square)
-            new_squares = make_move(squares, m)
-            # print("Possible move : ", index_to_xy(m.start_square), index_to_xy(m.target_square))
-    
-            # premier coup fait par nous, on a besoin du coup, autrement, minmax se charge de gérer avec uniquement des int (evals)
-            eval = -alpha_beta(new_squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1, pawn_directions, float("-inf"), float("inf"))
-            # eval = -minmax(new_squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1, pawn_directions)
-    
-            if eval > best_eval:
-                best_eval = eval
-                best_move = m
-    
-            # print(f"\tEvaluated as {eval}")
-        
-        return index_to_xy(best_move.start_square), index_to_xy(best_move.target_square)
 
     def evaluate(squares, mycolor):
         st = time()
@@ -454,23 +445,39 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     evaluate_time = []
     generate_moves_time = []
     order_moves_time = []
+    nbr_nodes = 0
     
     loaded_board = load_from_string(board)
     pawn_directions = get_pawn_directions(player_sequence)
     mycolor = Pieces.white if player_sequence[1] == "w" else Pieces.black
-    fbm = find_best_move(loaded_board, mycolor, 5, pawn_directions)
+
+    best_current_move = ((0,0), (0,0)), -float('inf')
+    last_best = best_current_move
+    depth = 1
+    while True:
+        try:
+            best_current_move = ((0,0), (0,0)), -float('inf')
+            alpha_beta_memoization.clear()
+            fbm = find_best_move(loaded_board, mycolor, depth, pawn_directions)
+            
+            if best_current_move[1] < fbm[1]:
+                best_current_move = fbm
+            depth += 1
+            last_best = best_current_move
+        except:
+            print(f"stopped at depth {depth}, with {len(generate_moves_memo.keys())} move-generated boards, {nbr_nodes} nodes")
+            break
     
-    # print("TigreBot Time Stats")
-    # temps_total = time() - start_time
-    # def getPourcentage(t):
-    #     return str(round(sum(t)/temps_total * 100)) + "%"
-    # print("total :", temps_total)
-    # print("make_move total: ", sum(make_move_time), "->", getPourcentage(make_move_time))
-    # print("evaluate total: ", sum(evaluate_time), "->", getPourcentage(evaluate_time))
-    # print("generate_moves total: ", sum(generate_moves_time), "->", getPourcentage(generate_moves_time))
-    # print("order_moves total: ", sum(order_moves_time), "->", getPourcentage(order_moves_time))
-    # print("nombre nodes: ", nbr_nodes)
+    temps_total = time() - start_time
+    def getPourcentage(t):
+        return str(round(sum(t)/temps_total * 100)) + "%"
+    print("total :", temps_total)
+    print("make_move total: ", sum(make_move_time), "->", getPourcentage(make_move_time))
+    print("evaluate total: ", sum(evaluate_time), "->", getPourcentage(evaluate_time))
+    print("generate_moves total: ", sum(generate_moves_time), "->", getPourcentage(generate_moves_time))
+    print("order_moves total: ", sum(order_moves_time), "->", getPourcentage(order_moves_time))
     
-    return fbm
+    print(f"last_best (depth {depth})", last_best)
+    return last_best[0]
 
 register_chess_bot("TigreBot", chess_bot)
