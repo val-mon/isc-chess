@@ -8,7 +8,7 @@ evaluate_time = []
 generate_moves_time = []
 order_moves_time = []
 
-# FUNCTIONS
+#region FUNCTIONS
 def load_from_string(board):
     squares = [tuple()] * 64
     for y in range(8):
@@ -120,8 +120,9 @@ def order_moves(squares, moves):
     p = [move for move, score in ordered]
     order_moves_time.append(time() - st)
     return p
+#endregion
 
-# CLASSES
+#region CLASSES
 class Pieces:
     none = 0
 
@@ -337,6 +338,7 @@ class MoveGeneration:
                 if color_on_target != Pieces.none:
                     break
         return moves
+#endregion
         
 def chess_bot(player_sequence, board, time_budget, **kwargs):
     start_time = time()
@@ -370,10 +372,10 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
             score = -alpha_beta(new_squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1, pawn_directions, -beta, -alpha)
             if score >= beta :
                 return beta
-            alpha = max(score, alpha)
+            alpha = int(max(score, alpha))
 
-        alpha_beta_memoization[(sq_key, color)] = int(alpha)
-        return int(alpha)
+        alpha_beta_memoization[(sq_key, color)] = alpha
+        return alpha
     
     def find_best_move(squares, color: int, depth: int, pawn_directions) -> tuple[tuple[tuple[int, int], tuple[int, int]], int]:
         best_move = Move(0, 0)
@@ -452,18 +454,15 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     mycolor = Pieces.white if player_sequence[1] == "w" else Pieces.black
 
     best_current_move = ((0,0), (0,0)), -float('inf')
-    last_best = best_current_move
-    depth = 1
+    depth = 3
     while True:
         try:
-            best_current_move = ((0,0), (0,0)), -float('inf')
             alpha_beta_memoization.clear()
             fbm = find_best_move(loaded_board, mycolor, depth, pawn_directions)
             
             if best_current_move[1] < fbm[1]:
                 best_current_move = fbm
             depth += 1
-            last_best = best_current_move
         except:
             print(f"stopped at depth {depth}, with {len(generate_moves_memo.keys())} move-generated boards, {nbr_nodes} nodes")
             break
@@ -477,7 +476,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     print("generate_moves total: ", sum(generate_moves_time), "->", getPourcentage(generate_moves_time))
     print("order_moves total: ", sum(order_moves_time), "->", getPourcentage(order_moves_time))
     
-    print(f"last_best (depth {depth})", last_best)
-    return last_best[0]
+    print(f"last_best (depth {depth})", best_current_move)
+    return best_current_move[0]
 
 register_chess_bot("TigreBot", chess_bot)
