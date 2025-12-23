@@ -29,3 +29,21 @@ class TestsCheckmateInOne:
     def test_checkmate_in_one(self, player_sequence, board, expected):
         e = expected
         assert chess_bot(player_sequence,board,1) == ((e[0][0], e[0][1]), (e[1][0], e[1][1]))
+
+# @pytest.mark.parametrize(
+#     "player_sequence,board,expected",
+#     json.load(open("./Tests/checkmate_in_two.json", "r")),
+# )
+# class TestsCheckmateInTwo:
+#     def test_checkmate_in_two(self, player_sequence, board, expected):
+#         e = expected
+#         assert chess_bot(player_sequence,board,1) == ((e[0][0], e[0][1]), (e[1][0], e[1][1]))
+
+@pytest.mark.parametrize(
+    "player_sequence,board,expected",
+    json.load(open("./Tests/capture_attacker.json", "r")),
+)
+class TestsCaptureAttacker:
+    def test_capture_attacker(self, player_sequence, board, expected):
+        e = expected
+        assert chess_bot(player_sequence,board,1) == ((e[0][0], e[0][1]), (e[1][0], e[1][1]))
