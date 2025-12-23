@@ -94,44 +94,6 @@ def make_move(squares, move):
 
     make_move_time.append(time() - st)
     return new_squares
-    
-def order_moves(squares, moves, pawn_directions):
-    st = time()
-    ordered = []
-
-    for move in moves :
-        move_score_guess = 0
-        piece = squares[move.start_square]
-        move_piece_type, move_piece_color = squares[move.start_square]
-        captured_piece_type, caputre_piece_color = squares[move.target_square]
-
-        if captured_piece_type != Pieces.none :
-            move_score_guess = 10 * PiecesValues.get_piece_value.get(captured_piece_type) - PiecesValues.get_piece_value.get(move_piece_type)
-
-        target_y = index_to_xy(move.target_square)[0]
-        if piece[0] == Pieces.pawn and (target_y == 7 or target_y == 0):
-            move_score_guess += PiecesValues.get_piece_value.get(Pieces.queen)
-            
-        # TODO : check if worse with memoization of the moves generation
-
-        # new_squares = make_move(squares, move)
-        # new_color = Pieces.white if move_piece_color == Pieces.black else Pieces.black
-        # opponent_responses = MoveGeneration.generate_moves(squares, new_color, pawn_directions)
-        # check_pawn_attack = False
-        # for new_move in opponent_responses:
-        #     new_move_piece_type, new_move_piece_color = new_squares[new_move.start_square]
-        #     if new_move_piece_type == Pieces.pawn and new_move.target_square == move.target_square :
-        #         check_pawn_attack = True
-        #         break
-
-        # if check_pawn_attack:
-        #     move_score_guess -= PiecesValues.get_piece_value.get(move_piece_type)
-        ordered.append([move, move_score_guess])
-    
-    ordered.sort(key=lambda x: x[1], reverse=True)
-    p = [move for move, score in ordered]
-    order_moves_time.append(time() - st)
-    return p
 #endregion
 
 #region CLASSES
@@ -351,11 +313,48 @@ class MoveGeneration:
                     break
         return moves
 #endregion
-        
+
 def chess_bot(player_sequence, board, time_budget, **kwargs):
     start_time = time()
     generate_moves_memo = {}
     alpha_beta_memoization = {}
+    
+    def order_moves(squares, moves, pawn_directions):
+        st = time()
+        ordered = []
+    
+        for move in moves :
+            move_score_guess = 0
+            piece = squares[move.start_square]
+            move_piece_type, move_piece_color = squares[move.start_square]
+            captured_piece_type, caputre_piece_color = squares[move.target_square]
+    
+            if captured_piece_type != Pieces.none :
+                move_score_guess = 10 * PiecesValues.get_piece_value.get(captured_piece_type) - PiecesValues.get_piece_value.get(move_piece_type)
+    
+            target_y = index_to_xy(move.target_square)[0]
+            if piece[0] == Pieces.pawn and (target_y == 7 or target_y == 0):
+                move_score_guess += PiecesValues.get_piece_value.get(Pieces.queen)
+    
+            new_squares = make_move(squares, move)
+            new_color = Pieces.white if move_piece_color == Pieces.black else Pieces.black
+            opponent_responses = generate_moves(squares, new_color, pawn_directions)
+            check_pawn_attack = False
+            for new_move in opponent_responses:
+                new_move_piece_type, new_move_piece_color = new_squares[new_move.start_square]
+                if new_move_piece_type == Pieces.pawn and new_move.target_square == move.target_square :
+                    check_pawn_attack = True
+                    break
+    
+            if check_pawn_attack:
+                move_score_guess -= PiecesValues.get_piece_value.get(move_piece_type)
+            
+            ordered.append([move, move_score_guess])
+        
+        ordered.sort(key=lambda x: x[1], reverse=True)
+        p = [move for move, score in ordered]
+        order_moves_time.append(time() - st)
+        return p
     
     def alpha_beta(squares, color: int, depth: int, pawn_directions, alpha, beta) -> int:
         if time() - start_time >= time_budget - 0.25:   # TODO: trouver pourquoi des fois il prend bien plus de temps que ce qu'on lui laisse
@@ -474,7 +473,9 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
             
             if best_current_move[1] < fbm[1]:
                 best_current_move = fbm
+            print(depth, nbr_nodes)
             depth += 1
+            nbr_nodes = 0
         except:
             print(f"stopped at depth {depth}, with {len(generate_moves_memo.keys())} move-generated boards, {nbr_nodes} nodes")
             break
@@ -489,6 +490,8 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     print("order_moves total: ", sum(order_moves_time), "->", getPourcentage(order_moves_time))
     
     print(f"last_best (depth {depth})", best_current_move)
+    print(board)
+    print()
     return best_current_move[0]
 
 register_chess_bot("TigreBot", chess_bot)
