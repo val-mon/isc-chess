@@ -118,7 +118,13 @@ class Move:
     def __init__(self, start_square, target_square):
         self.start_square = start_square
         self.target_square = target_square
-        
+
+    def __eq__(self, other):
+        return self.start_square == other.start_square and self.target_square == other.target_square
+
+    def __hash__(self):
+        return hash((self.start_square, self.target_square))
+
 class MoveUtils:
     direction_offsets = [8, -8, -1, 1, 7, -9, 9, -7]
 
@@ -397,6 +403,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     start_time = time()
     generate_moves_memo = {}
     alpha_beta_memoization = {}
+    moves_to_avoid = set()
     
     def order_moves(squares, moves, pawn_directions):
         st = time()
@@ -463,13 +470,19 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
         for m in moves:
             if squares[m.target_square][0] == Pieces.king:
                 return (index_to_xy(m.start_square), index_to_xy(m.target_square)), PiecesValues.get_piece_value[Pieces.king] + depth
+            
+            if m in moves_to_avoid:
+                continue
+        
             new_squares = make_move(squares, m)
-    
             eval = -alpha_beta(new_squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1, pawn_directions, float("-inf"), float("inf"))
     
             if eval > best_eval:
                 best_eval = eval
                 best_move = m
+                
+            if eval < -PiecesValues.get_piece_value[Pieces.king]:
+                moves_to_avoid.add(m)
         
         return (index_to_xy(best_move.start_square), index_to_xy(best_move.target_square)), best_eval
 
