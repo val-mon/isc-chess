@@ -97,6 +97,9 @@ def make_move(squares, move):
 #endregion
 
 #region CLASSES
+class SearchTimeout(Exception):
+    pass
+
 class Pieces:
     none = 0
 
@@ -410,19 +413,6 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
             target_y = index_to_xy(move.target_square)[0]
             if piece[0] == Pieces.pawn and (target_y == 7 or target_y == 0):
                 move_score_guess += PiecesValues.get_piece_value.get(Pieces.queen)
-    
-            new_squares = make_move(squares, move)
-            new_color = Pieces.white if move_piece_color == Pieces.black else Pieces.black
-            opponent_responses = generate_moves(new_squares, new_color, pawn_directions)
-            check_pawn_attack = False
-            for new_move in opponent_responses:
-                new_move_piece_type, new_move_piece_color = new_squares[new_move.start_square]
-                if new_move_piece_type == Pieces.pawn and new_move.target_square == move.target_square :
-                    check_pawn_attack = True
-                    break
-    
-            if check_pawn_attack:
-                move_score_guess -= PiecesValues.get_piece_value.get(move_piece_type)
             
             ordered.append([move, move_score_guess])
         
@@ -432,8 +422,8 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
         return p
     
     def alpha_beta(squares, color: int, depth: int, pawn_directions, alpha, beta) -> int:
-        if time() - start_time >= time_budget - 0.1:   # TODO: trouver pourquoi des fois il prend bien plus de temps que ce qu'on lui laisse
-            raise Exception("no more time")
+        if time() - start_time >= time_budget - 0.16:
+            raise SearchTimeout()
         
         sq_key = tuple(squares)
         if (sq_key, color, depth) in alpha_beta_memoization:
@@ -547,16 +537,17 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     mycolor = Pieces.white if player_sequence[1] == "w" else Pieces.black
 
     best_current_move = ((0,0), (0,0)), -float('inf')
-    depth = 3
+    depth = 1
     while True:
+        if time() - start_time >= time_budget - 0.16:
+            break
         try:
             # alpha_beta_memoization.clear()            
             best_current_move = find_best_move(loaded_board, mycolor, depth, pawn_directions)
 
             depth += 1
             nbr_nodes = 0
-        except:
-            # print(f"stopped at depth {depth}, with {len(generate_moves_memo.keys())} move-generated boards, {nbr_nodes} nodes")
+        except SearchTimeout:
             break
     
     # temps_total = time() - start_time
