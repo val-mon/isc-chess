@@ -413,7 +413,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     
             new_squares = make_move(squares, move)
             new_color = Pieces.white if move_piece_color == Pieces.black else Pieces.black
-            opponent_responses = generate_moves(squares, new_color, pawn_directions)
+            opponent_responses = generate_moves(new_squares, new_color, pawn_directions)
             check_pawn_attack = False
             for new_move in opponent_responses:
                 new_move_piece_type, new_move_piece_color = new_squares[new_move.start_square]
@@ -489,7 +489,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
         if dict_key in generate_moves_memo:
             return generate_moves_memo[dict_key]
 
-        st = time()
+        st = time() 
         moves = list()
         for start_square, piece in enumerate(squares):
             piece_type, piece_color = piece
@@ -501,7 +501,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
                         moves.extend(MoveGeneration.generate_pawn_moves(squares, start_square, piece, pawn_directions))
                     case Pieces.knight:
                         moves.extend(MoveGeneration.generate_knight_moves(squares, start_square, piece))
-                    case Pieces.bishop | Pieces.rook | Pieces.queen:
+                    case Pieces.bishop | Pieces.rook | Pieces. queen:
                         moves.extend(MoveGeneration.generate_sliding_moves(squares, start_square, piece))
                     case _:
                         print("INFO : problem generating moves")
