@@ -423,20 +423,20 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
         return p
     
     def alpha_beta(squares, color: int, depth: int, pawn_directions, alpha, beta) -> int:
-        if time() - start_time >= time_budget - 0.16:
+        if time() - start_time >= time_budget - 0.065:
             raise SearchTimeout()
+        
+        global nbr_nodes
+        nbr_nodes += 1
         
         if depth <= 0:
             return evaluate(squares, color, pawn_directions)
 
-        sq_key = tuple(squares)
-        if (sq_key, color, depth) in alpha_beta_memoization:
-            return alpha_beta_memoization[(sq_key, color, depth)]
+        sq_key = tuple(squares), depth
+        if sq_key in alpha_beta_memoization:
+            return alpha_beta_memoization[sq_key]
         
-        global nbr_nodes
-        nbr_nodes += 1
         moves = generate_moves(squares, color, pawn_directions)
-    
         if not moves:
             # Checkmate or Stalemate. Prioritize faster checkmates.
             return -PiecesValues.get_piece_value[Pieces.king] - depth
@@ -451,9 +451,9 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
                 return beta
             alpha = int(max(score, alpha))
 
-        alpha_beta_memoization[(sq_key, color, depth)] = alpha
+        alpha_beta_memoization[sq_key] = alpha
         return alpha
-    
+
     def find_best_move(squares, color: int, depth: int, pawn_directions) -> tuple[tuple[tuple[int, int], tuple[int, int]], int]:
         best_move = Move(0, 0)
         best_eval = float("-inf")
@@ -474,9 +474,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
         return (index_to_xy(best_move.start_square), index_to_xy(best_move.target_square)), best_eval
 
     def generate_moves(squares, mycolor, pawn_directions):
-        square_data = tuple(squares)
-        dict_key = square_data, mycolor
-
+        dict_key = tuple(squares), mycolor
         if dict_key in generate_moves_memo:
             return generate_moves_memo[dict_key]
 
@@ -540,12 +538,11 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     best_current_move = ((0,0), (0,0)), -float('inf')
     depth = 1
     while True:
-        if time() - start_time >= time_budget - 0.16:
+        if time() - start_time >= time_budget - 0.065:
             break
-        try:
-            # alpha_beta_memoization.clear()            
+        try:            
             best_current_move = find_best_move(loaded_board, mycolor, depth, pawn_directions)
-
+            # print(depth, nbr_nodes)
             depth += 1
             nbr_nodes = 0
         except SearchTimeout:
@@ -560,7 +557,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     # print("generate_moves total: ", sum(generate_moves_time), "->", getPourcentage(generate_moves_time))
     # print("order_moves total: ", sum(order_moves_time), "->", getPourcentage(order_moves_time))
     
-    print(f"last_best (depth {depth})", best_current_move)
+    # print(f"last_best (depth {depth})", best_current_move)
     return best_current_move[0]
 
 register_chess_bot("TigreBot", chess_bot)
