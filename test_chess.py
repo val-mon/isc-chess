@@ -37,7 +37,7 @@ class TestsCheckmateInOne:
 class TestsCheckmateInTwo:
     def test_checkmate_in_two(self, player_sequence, board, expected):
         e = expected
-        assert chess_bot(player_sequence,board,1) == ((e[0][0], e[0][1]), (e[1][0], e[1][1]))
+        assert chess_bot(player_sequence,board,2) == ((e[0][0], e[0][1]), (e[1][0], e[1][1]))
 
 @pytest.mark.parametrize(
     "player_sequence,board,expected",

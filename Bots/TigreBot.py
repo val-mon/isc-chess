@@ -114,6 +114,7 @@ class Pieces:
     black = 16
 
 class Move:
+    __slots__ = "start_square", "target_square"
     def __init__(self, start_square, target_square):
         self.start_square = start_square
         self.target_square = target_square
@@ -425,6 +426,9 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
         if time() - start_time >= time_budget - 0.16:
             raise SearchTimeout()
         
+        if depth <= 0:
+            return evaluate(squares, color, pawn_directions)
+
         sq_key = tuple(squares)
         if (sq_key, color, depth) in alpha_beta_memoization:
             return alpha_beta_memoization[(sq_key, color, depth)]
@@ -437,9 +441,6 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
             # Checkmate or Stalemate. Prioritize faster checkmates.
             return -PiecesValues.get_piece_value[Pieces.king] - depth
     
-        if depth <= 0:
-            return evaluate(squares, color, pawn_directions)
-        
         moves = order_moves(squares, moves, pawn_directions)
         for m in moves:
             if squares[m.target_square][0] == Pieces.king:
