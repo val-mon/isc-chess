@@ -432,12 +432,12 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
         return p
     
     def alpha_beta(squares, color: int, depth: int, pawn_directions, alpha, beta) -> int:
-        if time() - start_time >= time_budget - 0.25:   # TODO: trouver pourquoi des fois il prend bien plus de temps que ce qu'on lui laisse
+        if time() - start_time >= time_budget - 0.1:   # TODO: trouver pourquoi des fois il prend bien plus de temps que ce qu'on lui laisse
             raise Exception("no more time")
         
         sq_key = tuple(squares)
-        if (sq_key, color) in alpha_beta_memoization:
-            return alpha_beta_memoization[(sq_key, color)]
+        if (sq_key, color, depth) in alpha_beta_memoization:
+            return alpha_beta_memoization[(sq_key, color, depth)]
         
         global nbr_nodes
         nbr_nodes += 1
@@ -460,7 +460,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
                 return beta
             alpha = int(max(score, alpha))
 
-        alpha_beta_memoization[(sq_key, color)] = alpha
+        alpha_beta_memoization[(sq_key, color, depth)] = alpha
         return alpha
     
     def find_best_move(squares, color: int, depth: int, pawn_directions) -> tuple[tuple[tuple[int, int], tuple[int, int]], int]:
@@ -489,7 +489,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
         if dict_key in generate_moves_memo:
             return generate_moves_memo[dict_key]
 
-        st = time() 
+        st = time()
         moves = list()
         for start_square, piece in enumerate(squares):
             piece_type, piece_color = piece
@@ -501,7 +501,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
                         moves.extend(MoveGeneration.generate_pawn_moves(squares, start_square, piece, pawn_directions))
                     case Pieces.knight:
                         moves.extend(MoveGeneration.generate_knight_moves(squares, start_square, piece))
-                    case Pieces.bishop | Pieces.rook | Pieces. queen:
+                    case Pieces.bishop | Pieces.rook | Pieces.queen:
                         moves.extend(MoveGeneration.generate_sliding_moves(squares, start_square, piece))
                     case _:
                         print("INFO : problem generating moves")
@@ -550,10 +550,8 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     depth = 3
     while True:
         try:
-            alpha_beta_memoization.clear()
-            fbm = find_best_move(loaded_board, mycolor, depth, pawn_directions)
-            
-            best_current_move = fbm
+            # alpha_beta_memoization.clear()            
+            best_current_move = find_best_move(loaded_board, mycolor, depth, pawn_directions)
 
             depth += 1
             nbr_nodes = 0
