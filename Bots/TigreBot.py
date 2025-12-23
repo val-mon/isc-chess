@@ -140,12 +140,87 @@ class MoveUtils:
 
 class PiecesValues:
     get_piece_value = {
-        Pieces.pawn : 100,
-        Pieces.knight : 300,
-        Pieces.bishop : 300,
-        Pieces.rook : 500,
-        Pieces.queen : 900,
-        Pieces.king : 9000,
+        Pieces.pawn : 10,
+        Pieces.knight : 30,
+        Pieces.bishop : 30,
+        Pieces.rook : 50,
+        Pieces.queen : 90,
+        Pieces.king : 900,
+    }
+
+    pawn_table = [
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+        5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0,
+        1.0,  1.0,  2.0,  3.0,  3.0,  2.0,  1.0,  1.0,
+        0.5,  0.5,  1.0,  2.5,  2.5,  1.0,  0.5,  0.5,
+        0.0,  0.0,  0.0,  2.0,  2.0,  0.0,  0.0,  0.0,
+        0.5, -0.5, -1.0,  0.0,  0.0, -1.0, -0.5,  0.5,
+        0.5,  1.0,  1.0, -2.0, -2.0,  1.0,  1.0,  0.5,
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+    ]
+
+    knight_table = [
+        -5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0,
+        -4.0, -2.0,  0.0,  0.0,  0.0,  0.0, -2.0, -4.0,
+        -3.0,  0.0,  1.0,  1.5,  1.5,  1.0,  0.0, -3.0,
+        -3.0,  0.5,  1.5,  2.0,  2.0,  1.5,  0.5, -3.0,
+        -3.0,  0.0,  1.5,  2.0,  2.0,  1.5,  0.0, -3.0,
+        -3.0,  0.5,  1.0,  1.5,  1.5,  1.0,  0.5, -3.0,
+        -4.0, -2.0,  0.0,  0.5,  0.5,  0.0, -2.0, -4.0,
+        -5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0,
+    ]
+
+    bishop_table = [
+        -2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0,
+        -1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -1.0,
+        -1.0,  0.0,  0.5,  1.0,  1.0,  0.5,  0.0, -1.0,
+        -1.0,  0.5,  0.5,  1.0,  1.0,  0.5,  0.5, -1.0,
+        -1.0,  0.0,  1.0,  1.0,  1.0,  1.0,  0.0, -1.0,
+        -1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0, -1.0,
+        -1.0,  0.5,  0.0,  0.0,  0.0,  0.0,  0.5, -1.0,
+        -2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0,
+    ]
+
+    rook_table = [
+        0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+        0.5,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  0.5,
+        -0.5, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5,
+        -0.5, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5,
+        -0.5, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5,
+        -0.5, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5,
+        -0.5, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5,
+        0.0,  0.0,  0.0,  0.5,  0.5,  0.0,  0.0,  0.0,
+    ]
+
+    queen_table = [
+        -2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0,
+        -1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -1.0,
+        -1.0,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -1.0,
+        -0.5,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -0.5,
+         0.0,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -0.5,
+        -1.0,  0.5,  0.5,  0.5,  0.5,  0.5,  0.0, -1.0,
+        -1.0,  0.0,  0.5,  0.0,  0.0,  0.0,  0.0, -1.0,
+        -2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0,
+    ]
+
+    king_table = [
+        -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0,
+        -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0,
+        -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0,
+        -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0,
+        -2.0, -3.0, -3.0, -4.0, -4.0, -3.0, -3.0, -2.0,
+        -1.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -1.0,
+         2.0,  2.0,  0.0,  0.0,  0.0,  0.0,  2.0,  2.0,
+         2.0,  3.0,  1.0,  0.0,  0.0,  1.0,  3.0,  2.0,
+    ]
+
+    piece_tables = {
+        Pieces.pawn: pawn_table,
+        Pieces.knight: knight_table,
+        Pieces.bishop: bishop_table,
+        Pieces.rook: rook_table,
+        Pieces.queen: queen_table,
+        Pieces.king: king_table,
     }
     
 class MoveGeneration:
@@ -370,15 +445,15 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     
         if not moves:
             # Checkmate or Stalemate. Prioritize faster checkmates.
-            return -100000 - depth
+            return -PiecesValues.get_piece_value[Pieces.king] - depth
     
         if depth <= 0:
-            return evaluate(squares, color)
+            return evaluate(squares, color, pawn_directions)
         
         moves = order_moves(squares, moves, pawn_directions)
         for m in moves:
             if squares[m.target_square][0] == Pieces.king:
-                return 1000000 + depth
+                return PiecesValues.get_piece_value[Pieces.king] + depth
             new_squares = make_move(squares, m)
             score = -alpha_beta(new_squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1, pawn_directions, -beta, -alpha)
             if score >= beta :
@@ -396,7 +471,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     
         for m in moves:
             if squares[m.target_square][0] == Pieces.king:
-                return (index_to_xy(m.start_square), index_to_xy(m.target_square)), 100000 + depth
+                return (index_to_xy(m.start_square), index_to_xy(m.target_square)), PiecesValues.get_piece_value[Pieces.king] + depth
             new_squares = make_move(squares, m)
     
             eval = -alpha_beta(new_squares, Pieces.white if color == Pieces.black else Pieces.black, depth - 1, pawn_directions, float("-inf"), float("inf"))
@@ -435,21 +510,28 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
         generate_moves_time.append(time() - st)
         return moves
 
-    def evaluate(squares, mycolor):
+    def evaluate(squares, mycolor, pawn_directions):
         st = time()
         material = 0
 
-        for square in squares:
-            piece_type, piece_color = square
+        for square_index in range(64):
+            piece_type, piece_color = squares[square_index]
 
             if piece_type == Pieces.none:
                 continue
             
+            piece_value = PiecesValues.get_piece_value[piece_type]
+            
+            index = 63 - square_index if pawn_directions[Pieces.white] != MoveUtils.down else square_index
+            position_bonus = PiecesValues.piece_tables[piece_type][index]
+            
+            total_value = piece_value + position_bonus
+
             if piece_color == mycolor:
-                material += PiecesValues.get_piece_value[piece_type]
+                material += total_value
             else:
-                material -= PiecesValues.get_piece_value[piece_type]
-    
+                material -= total_value
+
         evaluate_time.append(time() - st)
         return material
 
@@ -471,27 +553,24 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
             alpha_beta_memoization.clear()
             fbm = find_best_move(loaded_board, mycolor, depth, pawn_directions)
             
-            if best_current_move[1] < fbm[1]:
-                best_current_move = fbm
-            print(depth, nbr_nodes)
+            best_current_move = fbm
+
             depth += 1
             nbr_nodes = 0
         except:
-            print(f"stopped at depth {depth}, with {len(generate_moves_memo.keys())} move-generated boards, {nbr_nodes} nodes")
+            # print(f"stopped at depth {depth}, with {len(generate_moves_memo.keys())} move-generated boards, {nbr_nodes} nodes")
             break
     
-    temps_total = time() - start_time
-    def getPourcentage(t):
-        return str(round(sum(t)/temps_total * 100)) + "%"
-    print("total :", temps_total)
-    print("make_move total: ", sum(make_move_time), "->", getPourcentage(make_move_time))
-    print("evaluate total: ", sum(evaluate_time), "->", getPourcentage(evaluate_time))
-    print("generate_moves total: ", sum(generate_moves_time), "->", getPourcentage(generate_moves_time))
-    print("order_moves total: ", sum(order_moves_time), "->", getPourcentage(order_moves_time))
+    # temps_total = time() - start_time
+    # def getPourcentage(t):
+    #     return str(round(sum(t)/temps_total * 100)) + "%"
+    # print("total :", temps_total)
+    # print("make_move total: ", sum(make_move_time), "->", getPourcentage(make_move_time))
+    # print("evaluate total: ", sum(evaluate_time), "->", getPourcentage(evaluate_time))
+    # print("generate_moves total: ", sum(generate_moves_time), "->", getPourcentage(generate_moves_time))
+    # print("order_moves total: ", sum(order_moves_time), "->", getPourcentage(order_moves_time))
     
     print(f"last_best (depth {depth})", best_current_move)
-    print(board)
-    print()
     return best_current_move[0]
 
 register_chess_bot("TigreBot", chess_bot)
