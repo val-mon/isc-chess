@@ -423,9 +423,6 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
         return p
     
     def alpha_beta(squares, color: int, depth: int, pawn_directions, alpha, beta) -> int:
-        if time() - start_time >= time_budget - 0.065:
-            raise SearchTimeout()
-        
         global nbr_nodes
         nbr_nodes += 1
         
@@ -443,6 +440,9 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     
         moves = order_moves(squares, moves, pawn_directions)
         for m in moves:
+            if time() - start_time >= time_budget - 0.03:
+                raise SearchTimeout()
+            
             if squares[m.target_square][0] == Pieces.king:
                 return PiecesValues.get_piece_value[Pieces.king] + depth
             new_squares = make_move(squares, m)
@@ -538,7 +538,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     best_current_move = ((0,0), (0,0)), -float('inf')
     depth = 1
     while True:
-        if time() - start_time >= time_budget - 0.065:
+        if time() - start_time >= time_budget - 0.03:
             break
         try:            
             best_current_move = find_best_move(loaded_board, mycolor, depth, pawn_directions)
@@ -548,16 +548,16 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
         except SearchTimeout:
             break
     
-    # temps_total = time() - start_time
+    temps_total = time() - start_time
     # def getPourcentage(t):
     #     return str(round(sum(t)/temps_total * 100)) + "%"
-    # print("total :", temps_total)
+    print("total :", temps_total)
     # print("make_move total: ", sum(make_move_time), "->", getPourcentage(make_move_time))
     # print("evaluate total: ", sum(evaluate_time), "->", getPourcentage(evaluate_time))
     # print("generate_moves total: ", sum(generate_moves_time), "->", getPourcentage(generate_moves_time))
     # print("order_moves total: ", sum(order_moves_time), "->", getPourcentage(order_moves_time))
     
-    # print(f"last_best (depth {depth})", best_current_move)
+    print(f"last_best (depth {depth})", best_current_move)
     return best_current_move[0]
 
 register_chess_bot("TigreBot", chess_bot)
