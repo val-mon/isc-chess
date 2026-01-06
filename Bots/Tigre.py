@@ -546,22 +546,22 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
             break
         try:            
             best_current_move = find_best_move(loaded_board, mycolor, depth, pawn_directions)
-            # print(depth, nbr_nodes)
+            # print("depth :", depth, ", nbr_nodes :", nbr_nodes)
             depth += 1
             nbr_nodes = 0
         except SearchTimeout:
             break
     
-    temps_total = time() - start_time
+    # temps_total = time() - start_time
     # def getPourcentage(t):
     #     return str(round(sum(t)/temps_total * 100)) + "%"
-    print("total :", temps_total)
+    # print("total :", temps_total)
     # print("make_move total: ", sum(make_move_time), "->", getPourcentage(make_move_time))
     # print("evaluate total: ", sum(evaluate_time), "->", getPourcentage(evaluate_time))
     # print("generate_moves total: ", sum(generate_moves_time), "->", getPourcentage(generate_moves_time))
     # print("order_moves total: ", sum(order_moves_time), "->", getPourcentage(order_moves_time))
     
-    print(f"last_best (depth {depth})", best_current_move)
+    print(f"last_best (depth {depth})", best_current_move, "\n")
     return best_current_move[0]
 
 register_chess_bot("Tigre", chess_bot)
