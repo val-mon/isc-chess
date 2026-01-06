@@ -1,7 +1,7 @@
 import json
 import pytest
 
-from Bots.TigreBot import chess_bot
+from Bots.Tigre import chess_bot
 
 @pytest.mark.parametrize(
     "player_sequence,board,expected",
