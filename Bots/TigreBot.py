@@ -1,6 +1,6 @@
 from Bots.ChessBotList import register_chess_bot
 
-from time import time
+from time import perf_counter as time
 
 nbr_nodes = 0
 make_move_time = []
@@ -395,6 +395,7 @@ class MoveGeneration:
 
 def chess_bot(player_sequence, board, time_budget, **kwargs):
     start_time = time()
+    time_margin = 0.05
     generate_moves_memo = {}
     alpha_beta_memoization = {}
     
@@ -440,7 +441,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     
         moves = order_moves(squares, moves, pawn_directions)
         for m in moves:
-            if time() - start_time >= time_budget - 0.03:
+            if time() - start_time >= time_budget - time_margin:
                 raise SearchTimeout()
             
             if squares[m.target_square][0] == Pieces.king:
@@ -461,6 +462,9 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
         moves = generate_moves(squares, color, pawn_directions)
     
         for m in moves:
+            if time() - start_time >= time_budget - time_margin:
+                raise SearchTimeout()
+
             if squares[m.target_square][0] == Pieces.king:
                 return (index_to_xy(m.start_square), index_to_xy(m.target_square)), PiecesValues.get_piece_value[Pieces.king] + depth
         
@@ -538,7 +542,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     best_current_move = ((0,0), (0,0)), -float('inf')
     depth = 1
     while True:
-        if time() - start_time >= time_budget - 0.03:
+        if time() - start_time >= time_budget - time_margin:
             break
         try:            
             best_current_move = find_best_move(loaded_board, mycolor, depth, pawn_directions)
@@ -560,4 +564,4 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     print(f"last_best (depth {depth})", best_current_move)
     return best_current_move[0]
 
-register_chess_bot("TigreBot", chess_bot)
+register_chess_bot("Tigre", chess_bot)
