@@ -386,9 +386,9 @@ class MoveGeneration:
 #endregion
 
 def chess_bot(player_sequence, board, time_budget, **kwargs):
-    start_time = time()
     time_margin = 0.05
     time_end = time() + time_budget - time_margin
+    
     generate_moves_memo = {}
     alpha_beta_memoization = {}
     
@@ -525,10 +525,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
             depth += 1
         except SearchTimeout:
             break
-    
-    print("total :", time() - start_time)
-    
-    print(f"last_best (depth {depth})", best_current_move, "\n")
+
     return best_current_move[0]
 
 register_chess_bot("Tigre", chess_bot)
