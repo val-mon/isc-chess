@@ -2,12 +2,6 @@ from Bots.ChessBotList import register_chess_bot
 
 from time import perf_counter as time
 
-nbr_nodes = 0
-make_move_time = []
-evaluate_time = []
-generate_moves_time = []
-order_moves_time = []
-
 #region FUNCTIONS
 def load_from_string(board):
     squares = [tuple()] * 64
@@ -74,7 +68,6 @@ def index_to_xy(n: int):
     return y, x
 
 def make_move(squares, move):
-    st = time()
     # copy the board
     new_squares = squares[:]
 
@@ -92,7 +85,6 @@ def make_move(squares, move):
     # clear the start square
     new_squares[move.start_square] = (Pieces.none, Pieces.none)
 
-    make_move_time.append(time() - st)
     return new_squares
 #endregion
 
@@ -396,11 +388,11 @@ class MoveGeneration:
 def chess_bot(player_sequence, board, time_budget, **kwargs):
     start_time = time()
     time_margin = 0.05
+    time_end = time() + time_budget - time_margin
     generate_moves_memo = {}
     alpha_beta_memoization = {}
     
     def order_moves(squares, moves, pawn_directions):
-        st = time()
         ordered = []
     
         for move in moves :
@@ -419,14 +411,9 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
             ordered.append([move, move_score_guess])
         
         ordered.sort(key=lambda x: x[1], reverse=True)
-        p = [move for move, score in ordered]
-        order_moves_time.append(time() - st)
-        return p
+        return [move for move, score in ordered]
     
     def alpha_beta(squares, color: int, depth: int, pawn_directions, alpha, beta) -> int:
-        global nbr_nodes
-        nbr_nodes += 1
-        
         if depth <= 0:
             return evaluate(squares, color, pawn_directions)
 
@@ -441,7 +428,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     
         moves = order_moves(squares, moves, pawn_directions)
         for m in moves:
-            if time() - start_time >= time_budget - time_margin:
+            if time() >= time_end:
                 raise SearchTimeout()
             
             if squares[m.target_square][0] == Pieces.king:
@@ -462,7 +449,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
         moves = generate_moves(squares, color, pawn_directions)
     
         for m in moves:
-            if time() - start_time >= time_budget - time_margin:
+            if time() >= time_end:
                 raise SearchTimeout()
 
             if squares[m.target_square][0] == Pieces.king:
@@ -482,7 +469,6 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
         if dict_key in generate_moves_memo:
             return generate_moves_memo[dict_key]
 
-        st = time()
         moves = list()
         for start_square, piece in enumerate(squares):
             piece_type, piece_color = piece
@@ -500,11 +486,9 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
                         print("INFO : problem generating moves")
         
         generate_moves_memo[dict_key] = moves
-        generate_moves_time.append(time() - st)
         return moves
 
     def evaluate(squares, mycolor, pawn_directions):
-        st = time()
         material = 0
 
         for square_index in range(64):
@@ -525,15 +509,7 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
             else:
                 material -= total_value
 
-        evaluate_time.append(time() - st)
         return material
-
-    global make_move_time, evaluate_time, generate_moves_time, order_moves_time, nbr_nodes
-    make_move_time = []
-    evaluate_time = []
-    generate_moves_time = []
-    order_moves_time = []
-    nbr_nodes = 0
     
     loaded_board = load_from_string(board)
     pawn_directions = get_pawn_directions(player_sequence)
@@ -542,24 +518,15 @@ def chess_bot(player_sequence, board, time_budget, **kwargs):
     best_current_move = ((0,0), (0,0)), -float('inf')
     depth = 1
     while True:
-        if time() - start_time >= time_budget - time_margin:
+        if time() >= time_end:
             break
         try:            
             best_current_move = find_best_move(loaded_board, mycolor, depth, pawn_directions)
-            # print("depth :", depth, ", nbr_nodes :", nbr_nodes)
             depth += 1
-            nbr_nodes = 0
         except SearchTimeout:
             break
     
-    # temps_total = time() - start_time
-    # def getPourcentage(t):
-    #     return str(round(sum(t)/temps_total * 100)) + "%"
-    # print("total :", temps_total)
-    # print("make_move total: ", sum(make_move_time), "->", getPourcentage(make_move_time))
-    # print("evaluate total: ", sum(evaluate_time), "->", getPourcentage(evaluate_time))
-    # print("generate_moves total: ", sum(generate_moves_time), "->", getPourcentage(generate_moves_time))
-    # print("order_moves total: ", sum(order_moves_time), "->", getPourcentage(order_moves_time))
+    print("total :", time() - start_time)
     
     print(f"last_best (depth {depth})", best_current_move, "\n")
     return best_current_move[0]
